@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Lernklar</title>
+<meta name="description" content="Dein Uni-Helfer: Stundenplan, Lernplan bis zur Prüfung, geführte Lern-Sessions und Erinnerungen.">
+<meta name="theme-color" content="#eef0f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111215" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lernklar">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="splash" aria-hidden="true"><img src="icons/apple-touch-icon.png" alt=""><b>Lernklar</b></div>
+<div class="app">
+  <nav class="nav" aria-label="Hauptnavigation">
+    <div class="brand"><span class="brand-mascot" style="width:38px;height:38px;display:block"></span>Lernklar</div>
+    <button class="tab" data-tab="heute"><i class="ph-bold ph-house-simple"></i><span>Heute</span></button>
+    <button class="tab" data-tab="plan"><i class="ph-bold ph-calendar-dots"></i><span>Plan</span></button>
+    <button class="tab" data-tab="faecher"><i class="ph-bold ph-books"></i><span>Fächer</span></button>
+    <button class="tab" data-tab="stats"><i class="ph-bold ph-chart-bar"></i><span>Fortschritt</span></button>
+    <div class="nav-extra">
+      <button class="tab" data-act="settings"><i class="ph-bold ph-gear-six"></i><span>Einstellungen</span></button>
+    </div>
+  </nav>
+  <main id="view"></main>
+</div>
+<div id="sheet" hidden></div>
+<div id="focus" class="focus" hidden></div>
+<input type="file" id="icsFile" accept=".ics,text/calendar" hidden>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<script src="ics.js"></script>
+<script src="app.js"></script>
+<script>
+// App-Gefühl: Startbildschirm ausblenden, kein Zoomen mit zwei Fingern,
+// kein Nachfedern am Rand (ältere iPhones kennen overscroll-behavior nicht).
+(() => {
+  const splash = document.getElementById('splash');
+  const weg = () => splash && splash.classList.add('weg');
+  addEventListener('load', () => setTimeout(weg, Math.max(0, 650 - performance.now())));
+  setTimeout(weg, 2500);
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault()));
+  const scroller = (el) => {
+    for (; el && el.nodeType === 1 && el !== document.documentElement; el = el.parentElement) {
+      const s = getComputedStyle(el);
+      if (/(auto|scroll)/.test(s.overflowY) && el.scrollHeight > el.clientHeight) return el;
+      if (/(auto|scroll)/.test(s.overflowX) && el.scrollWidth > el.clientWidth) return el;
+    }
+    return null;
+  };
+  document.addEventListener('touchstart', (e) => {
+    const el = scroller(e.target);
+    if (!el || el.scrollHeight <= el.clientHeight) return;
+    const max = el.scrollHeight - el.clientHeight;
+    if (el.scrollTop <= 0) el.scrollTop = 1;
+    else if (el.scrollTop >= max) el.scrollTop = max - 1;
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 1) return e.preventDefault();
+    if (e.target.closest && e.target.closest('input, textarea, select')) return;
+    if (!scroller(e.target)) e.preventDefault();
+  }, { passive: false });
+})();
+</script>
+</body>
+</html>
