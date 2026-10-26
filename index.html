@@ -22,7 +22,16 @@
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<div id="splash" aria-hidden="true"><img src="icons/apple-touch-icon.png" alt=""><b>Lernklar</b></div>
+<div id="splash" aria-hidden="true">
+  <div class="sb-sky"></div>
+  <div class="sb-mid">
+    <div class="sb-planet"><span class="sb-orbit"></span><span class="sb-orbit two"></span><span class="sb-moon"></span><img class="sb-logo" src="icons/icon.svg" alt=""></div>
+    <b class="sb-name">Lernklar</b>
+    <p class="sb-tag">Lernen mit Plan. Ole passt auf.</p>
+    <div class="sb-bar"><i></i></div>
+  </div>
+</div>
+<div id="onb" class="onb" hidden></div>
 <div class="app">
   <nav class="nav" aria-label="Hauptnavigation">
     <div class="brand"><span class="brand-mascot" style="width:38px;height:38px;display:block"></span>Lernklar</div>
@@ -47,9 +56,12 @@
 // kein Nachfedern am Rand (ältere iPhones kennen overscroll-behavior nicht).
 (() => {
   const splash = document.getElementById('splash');
-  const weg = () => splash && splash.classList.add('weg');
-  addEventListener('load', () => setTimeout(weg, Math.max(0, 650 - performance.now())));
-  setTimeout(weg, 2500);
+  // Startbildschirm wie bei Sales Universe: kurz stehen lassen (am Handy etwas länger), dann wegzoomen
+  const weg = () => { if (!splash || splash.classList.contains('weg')) return; splash.classList.add('weg'); setTimeout(() => splash.remove(), 700); };
+  const min = matchMedia('(max-width: 760px)').matches ? 1400 : 800;
+  const los = () => setTimeout(weg, Math.max(0, min - performance.now()));
+  if (document.readyState !== 'loading') los(); else document.addEventListener('DOMContentLoaded', los);
+  setTimeout(weg, 4000);
   ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault()));
   const scroller = (el) => {
     for (; el && el.nodeType === 1 && el !== document.documentElement; el = el.parentElement) {

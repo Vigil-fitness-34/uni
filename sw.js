@@ -1,5 +1,5 @@
 // Bei jedem Update CACHE hochzählen, sonst behalten installierte Apps die alte Version.
-const CACHE = 'lernklar-v1';
+const CACHE = 'lernklar-v2';
 const CORE = ['./', 'index.html', 'app.css', 'app.js', 'ics.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

@@ -532,7 +532,8 @@ function settingsSheet() {
     <div class="set-sec"><label class="f">Dein Name<input class="input" data-set="name" value="${esc(st.name)}" placeholder="Wie soll Ole dich nennen?"></label>
       <div class="f"><span>Aussehen</span><div class="seg">${[['system', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([v, l]) => `<button class="${st.theme === v ? 'on' : ''}" data-act="theme" data-v="${v}">${l}</button>`).join('')}</div></div></div>
     <div class="set-sec"><h3>Lerntage</h3><p class="muted small">An diesen Tagen plant Ole Lernblöcke ein, ab der Uhrzeit (verschiebt sich nach hinten, wenn da eine Vorlesung ist).</p>
-      <div class="days-pick">${WEEK.map(w => `<div class="dp ${st.days[w] ? 'on' : ''}"><button data-act="toggleDay" data-w="${w}">${WDS[w]}</button>${st.days[w] ? `<input class="input sm" type="time" data-day="${w}" value="${st.days[w]}">` : ''}</div>`).join('')}</div>
+      <div class="days-pick">${WEEK.map(w => `<div class="dp ${st.days[w] ? 'on' : ''}"><button data-act="toggleDay" data-w="${w}">${WDS[w]}</button></div>`).join('')}</div>
+      <div class="day-times">${WEEK.filter(w => st.days[w]).map(w => `<label class="dt"><span>${WDL[w]}</span><input class="input sm" type="time" data-day="${w}" value="${st.days[w]}"></label>`).join('')}</div>
       <div class="three"><label class="f">Pro Lerntag<select class="input" data-set="dayMin">${[30, 45, 60, 90, 120, 180].map(n => `<option value="${n}" ${n === st.dayMin ? 'selected' : ''}>${n} Min</option>`).join('')}</select></label>
         <label class="f">Block<select class="input" data-set="block">${[20, 25, 30, 45, 50].map(n => `<option value="${n}" ${n === st.block ? 'selected' : ''}>${n} Min</option>`).join('')}</select></label>
         <label class="f">Übungsblatt<select class="input" data-set="ueMin">${[30, 45, 60, 90].map(n => `<option value="${n}" ${n === st.ueMin ? 'selected' : ''}>${n} Min</option>`).join('')}</select></label></div></div>
@@ -971,6 +972,64 @@ document.addEventListener('input', e => { if (e.target.dataset.set === 'name') {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (!F) render(); checkReminders(); } });
 // Mitternacht und laufende Vorlesungen: Ansicht jede Minute auffrischen
 setInterval(() => { if (!F && sheetEl.hidden && !document.hidden) render(); }, 60e3);
+
+/* ---------- Einführung beim ersten Start: Name, Lerntage, erstes Fach ---------- */
+const onbEl = $('#onb');
+const O = { i: 0, name: S.set.name, days: Object.assign({}, S.set.days), time: '18:00', dayMin: S.set.dayMin, subj: '', exam: '' };
+function renderOnb() {
+  const steps = 3, p = Math.round((O.i + 1) / steps * 100);
+  const top = `<div class="onb-top"><div class="bar"><i style="--w:${p}%"></i></div><button class="onb-skip" data-onb="skip">Überspringen</button></div>`;
+  let mid, bot;
+  if (O.i === 0) {
+    mid = `<div class="mascot">${ole('happy')}</div><h1>Hi, ich bin Ole!</h1><p class="lead">Ich plane dein Lernen, erinnere dich an Vorlesungen und passe auf, dass vor der Klausur nichts liegen bleibt. Wie heißt du?</p>
+      <input class="input" id="onbName" placeholder="Dein Vorname" value="${esc(O.name)}" autocomplete="given-name">`;
+    bot = `<button class="btn primary block" data-onb="next">Weiter</button>`;
+  } else if (O.i === 1) {
+    mid = `<div class="mascot">${ole('ok', true)}</div><h1>Wann willst du lernen${O.name ? `, ${esc(O.name)}` : ''}?</h1><p class="lead">An diesen Tagen plane ich Lernblöcke ein. Ändern kannst du das jederzeit.</p>
+      <div class="days-pick">${WEEK.map(w => `<div class="dp ${O.days[w] ? 'on' : ''}"><button data-onb="day" data-w="${w}">${WDS[w]}</button></div>`).join('')}</div>
+      <div class="two"><label class="f">Ab wann?<input class="input" type="time" id="onbTime" value="${O.time}"></label>
+      <label class="f">Wie lange?<select class="input" id="onbMin">${[30, 45, 60, 90, 120].map(n => `<option value="${n}" ${n === O.dayMin ? 'selected' : ''}>${n} Minuten</option>`).join('')}</select></label></div>`;
+    bot = `<button class="btn primary block" data-onb="next">Weiter</button><button class="btn ghost block" data-onb="back">Zurück</button>`;
+  } else {
+    mid = `<div class="mascot">${ole('ok')}</div><h1>Dein erstes Fach</h1><p class="lead">Mehr Fächer und deinen Stundenplan aus dem Uni-Kalender holst du dir danach.</p>
+      <input class="input" id="onbSubj" placeholder="z. B. Statistik" value="${esc(O.subj)}" autocomplete="off">
+      <label class="f">Prüfung am (optional)<input class="input" type="date" id="onbExam" value="${O.exam}"></label>`;
+    bot = `<button class="btn primary block" data-onb="done">Los geht’s</button><button class="btn ghost block" data-onb="back">Zurück</button>`;
+  }
+  onbEl.innerHTML = `${top}<div class="onb-mid" key="${O.i}">${mid}</div><div class="onb-bot">${bot}</div>`;
+}
+function readOnb() {
+  if ($('#onbName')) O.name = $('#onbName').value.trim();
+  if ($('#onbMin')) O.dayMin = +$('#onbMin').value;
+  if ($('#onbTime')) { O.time = $('#onbTime').value || '18:00'; for (const w of WEEK) if (O.days[w]) O.days[w] = O.time; }
+  if ($('#onbSubj')) O.subj = $('#onbSubj').value.trim();
+  if ($('#onbExam')) O.exam = $('#onbExam').value;
+}
+function finishOnb(save) {
+  readOnb();
+  if (save) {
+    S.set.name = O.name; S.set.days = O.days; S.set.dayMin = O.dayMin;
+    if (O.subj) {
+      const s = ensureSubject(O.subj);
+      if (O.exam) S.exams.push({ id: uid(), sid: s.id, type: 'Klausur', date: O.exam, time: '', room: '' });
+    }
+  }
+  S.set.onboarded = true; persist();
+  onbEl.hidden = true; onbEl.innerHTML = ''; render();
+  if (save && O.subj) { confetti(60); toast('Fertig! Hol dir jetzt noch deinen Stundenplan.'); }
+}
+onbEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-onb]'); if (!b) return;
+  const a = b.dataset.onb;
+  readOnb();
+  if (a === 'next') { if (O.i === 1 && !Object.values(O.days).some(Boolean)) { toast('Wähl mindestens einen Lerntag.'); return; } O.i++; renderOnb(); }
+  else if (a === 'back') { O.i = Math.max(0, O.i - 1); renderOnb(); }
+  else if (a === 'day') { const w = b.dataset.w; O.days[w] = O.days[w] ? null : O.time; renderOnb(); }
+  else if (a === 'done') finishOnb(true);
+  else if (a === 'skip') finishOnb(false);
+});
+onbEl.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); const b = onbEl.querySelector('[data-onb="next"], [data-onb="done"]'); b && b.click(); } });
+if (!S.set.onboarded && !S.subjects.length) { onbEl.hidden = false; renderOnb(); }
 
 $('.brand-mascot').innerHTML = ole('ok');
 render();
